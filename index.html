@@ -29,7 +29,7 @@
         body { font-family: 'Noto Sans TC', sans-serif; scroll-behavior: smooth; }
         .serif-font { font-family: 'Noto Serif TC', serif; }
         
-        /* 卡片樣式：彩色外框 + 扁平白底結構 (圖1 邏輯) */
+        /* 卡片樣式：彩色外框 + 扁平白底結構 */
         .season-spring { border: 2px solid #a7d08c !important; }
         .season-summer { border: 2px solid #ff9b9b !important; }
         .season-autumn { border: 2px solid #ffcc80 !important; }
@@ -51,14 +51,13 @@
         .current-term-border { outline: 3px solid #78716c; outline-offset: 4px; }
         
         .hero-section {
-            /* 調低白色遮罩透明度（0.7/0.85 -> 0.4/0.55），讓背景圖更清楚 */
             background: linear-gradient(rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.55)), 
                         url('https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&q=80&w=2000');
             background-size: cover;
             background-position: center;
         }
 
-        /* 月曆核心排版：使用原生 CSS 確保無痕模式穩定 */
+        /* 月曆核心排版 */
         #calendarModal {
             display: none;
             position: fixed;
@@ -84,12 +83,25 @@
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
         }
 
-        #calendarContent {
+        #calendarScrollWrapper {
             flex-grow: 1;
+            overflow: auto; /* 核心：允許放大後捲動 */
             display: flex;
             flex-direction: column;
             min-height: 0;
+            position: relative;
+            -webkit-overflow-scrolling: touch; /* iOS 流暢捲動 */
+        }
+
+        #calendarContent {
+            width: 100%;
+            min-height: 100%;
+            display: flex;
+            flex-direction: column;
             padding: 8px;
+            transform-origin: top left; /* 改為左上角縮放以利捲動計算 */
+            transition: transform 0.1s ease-out;
+            /* 移除 touch-none，允許單指滑動 */
         }
 
         .calendar-grid-header {
@@ -98,8 +110,7 @@
             flex-shrink: 0;
             text-align: center;
             font-weight: bold;
-            /* 修改處：字體顏色調深 (#a8a29e -> #78716c) */
-            color: #78716c;
+            color: #44403c;
         }
 
         .calendar-grid-body {
@@ -240,20 +251,23 @@
                 <div class="flex items-center gap-2 md:gap-8">
                     <h2 class="hidden sm:block text-xl md:text-4xl font-bold serif-font text-stone-800 mr-2 tracking-wider">萬年曆查詢</h2>
                     <select id="calYearSelect" onchange="renderCalendarContent()" class="bg-stone-50 px-2 py-1 rounded-xl border border-stone-200 font-bold focus:outline-none text-base md:text-3xl shadow-sm"></select>
-                    <span class="font-bold text-stone-400 text-sm md:text-xl"></span>
-                    <select id="calMonthSelect" onchange="renderCalendarContent()" class="bg-stone-50 px-2 py-1 rounded-xl border border-stone-200 font-bold focus:outline-none text-base md:text-3xl shadow-sm"></select>
-                    <span class="font-bold text-stone-400 text-sm md:text-2xl">月</span>
+                    <select id="calMonthSelect" onchange="renderCalendarContent()" class="bg-stone-50 px-2 py-1 rounded-xl border border-stone-200 font-bold focus:outline-none text-base md:text-3xl shadow-sm ml-2 md:ml-4"></select>
+                    <span class="font-bold text-stone-400 text-sm md:text-2xl ml-1">月</span>
                 </div>
                 
-                <!-- 右上角關閉按鈕 -->
-                <button onclick="closeCalendar()" class="w-9 h-9 md:w-14 md:h-14 flex items-center justify-center bg-stone-100 hover:bg-stone-800 hover:text-white rounded-full transition-all text-stone-500 shadow-sm">
-                    <svg class="w-6 h-6 md:w-9 md:h-9" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
-                </button>
+                <div class="flex items-center gap-2">
+                    <button onclick="resetZoom()" class="flex w-9 h-9 items-center justify-center bg-stone-100 text-stone-500 rounded-full hover:bg-stone-200 text-xs font-bold" title="重設縮放">1:1</button>
+                    <button onclick="closeCalendar()" class="w-9 h-9 md:w-14 md:h-14 flex items-center justify-center bg-stone-100 hover:bg-stone-800 hover:text-white rounded-full transition-all text-stone-500 shadow-sm">
+                        <svg class="w-6 h-6 md:w-9 md:h-9" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
             </div>
             
-            <!-- 月曆主體 -->
-            <div id="calendarContent" class="touch-none text-center">
-                <!-- 由 JavaScript 渲染 -->
+            <!-- 月曆捲動包裝層 -->
+            <div id="calendarScrollWrapper">
+                <div id="calendarContent" class="text-center">
+                    <!-- 由 JavaScript 渲染 -->
+                </div>
             </div>
         </div>
     </div>
@@ -310,10 +324,10 @@
             "霜降": { season: "autumn", icon: "❄️", desc: "開始見到霜，寒意明顯。", detail: "秋季的最後一個節氣。氣候轉冷，大地開始出現初霜，象徵秋天即將結束。" },
             "立冬": { season: "winter", icon: "🧤", desc: "冬季的開始，萬物冬藏。", detail: "「冬」有終的意思。農作物已收曬入庫，動物準備冬眠。這也是補冬、食補的好時機。" },
             "小雪": { season: "winter", icon: "🌨️", desc: "氣溫降至零度，偶有飄雪。", detail: "北方開始降雪，但規模不大。南方則進入明顯的乾冷季節。民間開始醃製臘肉。" },
-            "大雪": { season: "winter", icon: "☃️", desc: "降雪範圍擴大，積雪變厚。", detail: "此時天氣更冷，降雪機會增加。是進補的好時機，也要注意頭部與腳部的保暖。" },
+            "大雪": { season: "winter", icon: "☃️", desc: "降雪範圍擴大，積雪變厚。", detail: "此時天氣更冷，降雪機會增加。是進補的好時機，也要注意頭部與腳部的保塊。" },
             "冬至": { season: "winter", icon: "🍡", desc: "一年中黑夜最長的一天。", detail: "太陽直射南回歸線。民間有「冬至大如年」的說法，台灣人習慣在這天吃湯圓、補冬。" },
             "小寒": { season: "winter", icon: "🧊", desc: "氣候進入寒冷季節。", detail: "雖然名為「小寒」，但在許多地區，這段時間往往比「大寒」還要寒冷。" },
-            "大寒": { season: "winter", icon: "🏔️", desc: "一年中最冷的尾聲。", detail: "二十四節氣的最後一個。此時正值歲末，充滿了迎接春節、除舊佈新的忙碌氣氣氛。" }
+            "大寒": { season: "winter", icon: "🏔️", desc: "一年中最冷的尾聲。", detail: "二十四節氣的最後一個。此時正值歲末，充滿了迎接春節、除舊佈新的忙碌氣氛。" }
         };
 
         const termOrder = [
@@ -325,8 +339,16 @@
         let currentYear = new Date().getFullYear();
         let computedSolarTerms = [];
         let cloudDataStore = {};
-        let calendarScrollThrottle = false;
-        let touchStartY = 0;
+        
+        // 觸控與縮放狀態
+        let touchState = {
+            scale: 1,
+            lastScale: 1,
+            initialDistance: 0,
+            touchStartY: 0,
+            isPinching: false,
+            throttle: false
+        };
 
         function updateTodayInfo() {
             if (typeof Solar === 'undefined') {
@@ -337,18 +359,15 @@
                 const now = new Date();
                 const solar = Solar.fromDate(now);
                 const lunar = solar.getLunar();
-                
-                // 將星期加上括號，例如 (四)
                 const solarStr = `${solar.getYear()}年${solar.getMonth()}月${solar.getDay()}日 (${solar.getWeekInChinese()})`;
                 const lunarStr = `農曆 ${lunar.getMonthInChinese()}月${lunar.getDayInChinese()}`;
-                
                 const gzYear = lunar.getYearInGanZhi();
                 const gzMonth = lunar.getMonthInGanZhi();
                 const gzDay = lunar.getDayInGanZhi();
                 const gzFullStr = `${gzYear}年 ${gzMonth}月 ${gzDay}日`;
 
                 document.getElementById('gregorianDate').innerText = solarStr;
-                document.getElementById('lunarAndStems').innerHTML = `${lunarStr}<br><span class="text-xs text-stone-500 font-bold mt-1 inline-block">${gzFullStr}</span>`;
+                document.getElementById('lunarAndStems').innerHTML = `${lunarStr}<br><span class="text-xs text-stone-700 font-bold mt-1 inline-block">${gzFullStr}</span>`;
             } catch (e) {
                 console.error("日期計算出錯", e);
             }
@@ -448,16 +467,12 @@
         function renderTerms(data, activeTermName = null) {
             const grid = document.getElementById('termsGrid');
             grid.innerHTML = '';
-            
             const activeName = activeTermName || getCurrentTermName();
-
             data.forEach((term) => {
                 const isToday = term.name === activeName;
                 const card = document.createElement('div');
-                
                 card.className = `term-card bg-white p-6 rounded-2xl shadow-md cursor-pointer season-${term.season} ${isToday ? 'current-term-border scale-105 shadow-xl' : ''}`;
                 card.onclick = () => openModal(term);
-                
                 card.innerHTML = `
                     <div class="flex justify-between items-start mb-4">
                         <div class="text-4xl">${term.icon}</div>
@@ -522,10 +537,8 @@
                 for (let i = 1901; i <= 2100; i++) {
                     const opt = document.createElement('option'); 
                     opt.value = i; 
-                    
                     const tempLunar = Solar.fromYmd(i, 6, 1).getLunar();
                     opt.text = `${i} ${tempLunar.getYearInGanZhi()}年`;
-                    
                     yearSelect.appendChild(opt);
                 }
                 for (let i = 1; i <= 12; i++) {
@@ -540,26 +553,95 @@
             
             modal.classList.add('active');
             document.body.style.overflow = 'hidden';
+            resetZoom();
             renderCalendarContent();
 
-            const calContentArea = document.getElementById('calendarContent');
-            calContentArea.onwheel = (e) => {
-                e.preventDefault();
-                changeCalendarMonth(e.deltaY > 0 ? 1 : -1);
+            const calContent = document.getElementById('calendarContent');
+            const scrollWrapper = document.getElementById('calendarScrollWrapper');
+
+            // 電腦滾輪縮放與切換
+            scrollWrapper.onwheel = (e) => {
+                if (e.ctrlKey) {
+                    e.preventDefault();
+                    const delta = e.deltaY > 0 ? -0.1 : 0.1;
+                    applyZoom(touchState.scale + delta);
+                } else if (touchState.scale === 1) {
+                    // 只有在 1:1 時滾輪才切換月份，防止縮放後滑動誤觸
+                    e.preventDefault();
+                    changeCalendarMonth(e.deltaY > 0 ? 1 : -1);
+                }
             };
-            calContentArea.addEventListener('touchstart', (e) => {
-                touchStartY = e.changedTouches[0].screenY;
-            }, { passive: true });
-            calContentArea.addEventListener('touchend', (e) => {
-                let touchEndY = e.changedTouches[0].screenY;
-                const threshold = 40; 
-                if (touchEndY < touchStartY - threshold) changeCalendarMonth(1); 
-                if (touchEndY > touchStartY + threshold) changeCalendarMonth(-1); 
+
+            // 手機觸控處理
+            calContent.addEventListener('touchstart', (e) => {
+                if (e.touches.length === 2) {
+                    touchState.isPinching = true;
+                    touchState.initialDistance = Math.hypot(
+                        e.touches[0].pageX - e.touches[1].pageX,
+                        e.touches[0].pageY - e.touches[1].pageY
+                    );
+                } else {
+                    touchState.isPinching = false;
+                    touchState.touchStartY = e.touches[0].pageY;
+                }
+            }, { passive: false });
+
+            calContent.addEventListener('touchmove', (e) => {
+                if (e.touches.length === 2 && touchState.isPinching) {
+                    e.preventDefault(); // 雙指縮放時禁止捲動
+                    const currentDistance = Math.hypot(
+                        e.touches[0].pageX - e.touches[1].pageX,
+                        e.touches[0].pageY - e.touches[1].pageY
+                    );
+                    const zoomFactor = currentDistance / touchState.initialDistance;
+                    applyZoom(touchState.lastScale * zoomFactor);
+                } else if (touchState.scale > 1) {
+                    // 放大狀態下，單指移動由瀏覽器原生捲動處理，不 preventDefault
+                } else if (e.touches.length === 1 && touchState.scale === 1) {
+                    // 1:1 狀態下可以滑動切換月份，但不要 preventDefault 否則會卡住
+                }
+            }, { passive: false });
+
+            calContent.addEventListener('touchend', (e) => {
+                if (touchState.isPinching) {
+                    touchState.lastScale = touchState.scale;
+                    touchState.isPinching = false;
+                } else if (touchState.scale === 1) {
+                    // 只有 1:1 時才判定滑動切換月份
+                    let touchEndY = e.changedTouches[0].pageY;
+                    const threshold = 50; 
+                    if (touchEndY < touchState.touchStartY - threshold) changeCalendarMonth(1); 
+                    if (touchEndY > touchState.touchStartY + threshold) changeCalendarMonth(-1); 
+                }
             }, { passive: true });
         }
 
+        function applyZoom(newScale) {
+            touchState.scale = Math.min(Math.max(1, newScale), 3);
+            const content = document.getElementById('calendarContent');
+            
+            // 修正點：同時使用 transform 與調整 width/height
+            // 這樣 overflow: auto 才能計算出正確的捲動區域
+            content.style.transform = `scale(${touchState.scale})`;
+            
+            // 設定實體寬度，讓捲軸出現
+            content.style.width = (100 * touchState.scale) + "%";
+            
+            // 如果是 1:1 則恢復原狀
+            if (touchState.scale <= 1) {
+                content.style.width = "100%";
+                content.style.transform = "scale(1)";
+            }
+        }
+
+        function resetZoom() {
+            touchState.scale = 1;
+            touchState.lastScale = 1;
+            applyZoom(1);
+        }
+
         function changeCalendarMonth(offset) {
-            if (calendarScrollThrottle) return;
+            if (touchState.throttle) return;
             const yearSelect = document.getElementById('calYearSelect');
             const monthSelect = document.getElementById('calMonthSelect');
             let year = parseInt(yearSelect.value);
@@ -570,8 +652,8 @@
             if (year >= 1901 && year <= 2100) {
                 yearSelect.value = year; monthSelect.value = month;
                 renderCalendarContent();
-                calendarScrollThrottle = true;
-                setTimeout(() => { calendarScrollThrottle = false; }, 250);
+                touchState.throttle = true;
+                setTimeout(() => { touchState.throttle = false; }, 250);
             }
         }
 
@@ -580,12 +662,7 @@
             document.body.style.overflow = 'auto';
         }
 
-        const traditionalJieQiMap = {
-            '惊蛰': '驚蟄',
-            '谷雨': '穀雨',
-            '芒种': '芒種',
-            '处暑': '處暑'
-        };
+        const traditionalJieQiMap = { '惊蛰': '驚蟄', '谷雨': '穀雨', '芒种': '芒種', '处暑': '處暑' };
 
         function renderCalendarContent() {
             const year = parseInt(document.getElementById('calYearSelect').value);
@@ -598,9 +675,9 @@
             
             let html = `
                 <div class="calendar-grid-header text-xs md:text-2xl mb-1 md:mb-2 uppercase tracking-wider shrink-0">
-                    <div class="py-1 text-red-500 font-black">日</div><div class="py-1">一</div><div class="py-1">二</div>
+                    <div class="py-1 text-red-600 font-black">日</div><div class="py-1">一</div><div class="py-1">二</div>
                     <div class="py-1">三</div><div class="py-1">四</div><div class="py-1">五</div>
-                    <div class="py-1 text-stone-500">六</div>
+                    <div class="py-1 text-stone-800 font-bold">六</div>
                 </div>
                 <div class="calendar-grid-body rounded-2xl md:rounded-[4rem] overflow-hidden bg-white">
             `;
@@ -610,21 +687,21 @@
                 const sol = Solar.fromYmd(year, month, d);
                 const lun = sol.getLunar();
                 const isToday = isCurrentMonth && today.getDate() === d;
-                
                 const lunarRow = `${lun.getMonthInChinese()}月${lun.getDayInChinese()}`;
-                const gzRow = `${lun.getMonthInGanZhi()}月 ${lun.getDayInGanZhi()}日`;
-                
+                const gzMonth = `${lun.getMonthInGanZhi()}月`;
+                const gzDay = `${lun.getDayInGanZhi()}日`;
                 const jieQi = lun.getJieQi();
                 const displayJieQi = traditionalJieQiMap[jieQi] || jieQi;
                 
                 html += `
                     <div class="calendar-day group hover:bg-stone-50 transition-all overflow-hidden border-b border-r border-stone-100 text-center">
-                        <span class="${isToday ? 'is-today-circle' : 'text-stone-800 font-bold'} text-sm md:text-2xl leading-none">${d}</span>
+                        <span class="${isToday ? 'is-today-circle' : 'text-stone-900 font-black'} text-sm md:text-2xl leading-none">${d}</span>
                         <div class="flex flex-col items-center mt-0.5 md:mt-1 text-center">
-                            <!-- 修改處：字體顏色調深 (stone-400 -> stone-600) -->
-                            <span class="text-[7px] md:text-sm text-stone-600 font-bold leading-tight text-center px-1">${lunarRow}</span>
-                            <!-- 修改處：字體顏色調深 (stone-300 -> stone-500) -->
-                            <span class="text-[6px] md:text-[10px] text-stone-500 font-medium leading-tight text-center px-1 mt-0.5">${gzRow}</span>
+                            <span class="text-[7px] md:text-sm text-stone-900 font-bold leading-tight text-center px-1">${lunarRow}</span>
+                            <div class="flex flex-col sm:flex-row sm:flex-nowrap items-center justify-center sm:gap-1 mt-0.5 md:mt-0 leading-tight">
+                                <span class="text-[6px] md:text-[10px] text-stone-700 font-bold whitespace-nowrap">${gzMonth}</span>
+                                <span class="text-[6px] md:text-[10px] text-stone-700 font-bold whitespace-nowrap">${gzDay}</span>
+                            </div>
                         </div>
                         ${displayJieQi ? `<span class="jie-qi-tag">${displayJieQi}</span>` : ''}
                     </div>
@@ -633,7 +710,6 @@
             const totalCells = firstDay + daysInMonth;
             const remaining = (42 - totalCells); 
             for (let i = 0; i < remaining; i++) html += `<div class="calendar-day bg-stone-50/20"></div>`;
-            
             html += `</div>`;
             container.innerHTML = html;
         }

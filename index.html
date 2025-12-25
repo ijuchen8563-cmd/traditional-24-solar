@@ -4,12 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>歲月流轉：二十四節氣大百科</title>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>歲月流轉：二十四節氣大百科</title>
 
     <link rel="apple-touch-icon" href="icon.svg">
-    <link rel="icon" type="image/svg	" href="icon.svg">
+    <link rel="icon" type="image/svg" href="icon.svg">
 
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -54,7 +51,8 @@
         .current-term-border { outline: 3px solid #78716c; outline-offset: 4px; }
         
         .hero-section {
-            background: linear-gradient(rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.85)), 
+            /* 調低白色遮罩透明度（0.7/0.85 -> 0.4/0.55），讓背景圖更清楚 */
+            background: linear-gradient(rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.55)), 
                         url('https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&q=80&w=2000');
             background-size: cover;
             background-position: center;
@@ -100,7 +98,8 @@
             flex-shrink: 0;
             text-align: center;
             font-weight: bold;
-            color: #a8a29e;
+            /* 修改處：字體顏色調深 (#a8a29e -> #78716c) */
+            color: #78716c;
         }
 
         .calendar-grid-body {
@@ -167,7 +166,7 @@
 </head>
 <body class="bg-stone-50 text-stone-800">
 
-    <!-- 頂部區：修正標題在手機版換行的問題 -->
+    <!-- 頂部區 -->
     <header class="hero-section relative py-10 md:py-16 text-stone-900 border-b border-stone-100 text-center">
         <div class="container mx-auto px-6 relative z-10 text-center">
             <h1 class="text-3xl sm:text-5xl md:text-7xl font-bold serif-font mb-6 tracking-[0.4em] text-stone-800 opacity-90 text-center whitespace-nowrap">二十四節氣</h1>
@@ -233,7 +232,7 @@
         </div>
     </div>
 
-    <!-- 修正後的月曆 Modal：獨立結構 -->
+    <!-- 月曆 Modal -->
     <div id="calendarModal">
         <div class="calendar-container">
             <!-- 頂部導覽列 -->
@@ -241,7 +240,7 @@
                 <div class="flex items-center gap-2 md:gap-8">
                     <h2 class="hidden sm:block text-xl md:text-4xl font-bold serif-font text-stone-800 mr-2 tracking-wider">萬年曆查詢</h2>
                     <select id="calYearSelect" onchange="renderCalendarContent()" class="bg-stone-50 px-2 py-1 rounded-xl border border-stone-200 font-bold focus:outline-none text-base md:text-3xl shadow-sm"></select>
-                    <span class="font-bold text-stone-400 text-sm md:text-xl">年</span>
+                    <span class="font-bold text-stone-400 text-sm md:text-xl"></span>
                     <select id="calMonthSelect" onchange="renderCalendarContent()" class="bg-stone-50 px-2 py-1 rounded-xl border border-stone-200 font-bold focus:outline-none text-base md:text-3xl shadow-sm"></select>
                     <span class="font-bold text-stone-400 text-sm md:text-2xl">月</span>
                 </div>
@@ -289,7 +288,7 @@
     <script>
         const ICS_URL = "https://raw.githubusercontent.com/KaitoHH/24-jieqi-ics/master/23_solar_terms_2015-01-01_2050-12-31.ics";
 
-        // 節氣詳細內容 - 全面轉為繁體並修正錯字
+        // 節氣詳細內容
         const solarTermsInfo = {
             "立春": { season: "spring", icon: "🌱", desc: "春季的開始，大地萬物復甦。", detail: "「立」是開始的意思。立春過後，白晝變長，氣溫回暖。民間有咬春（吃春餅或蘿蔔）的習俗。" },
             "雨水": { season: "spring", icon: "🌧️", desc: "降雨開始增加，氣溫升高。", detail: "降雪減少，降雨增多。農民開始為春耕做準備，象徵著草木隨雨水而生長。" },
@@ -314,7 +313,7 @@
             "大雪": { season: "winter", icon: "☃️", desc: "降雪範圍擴大，積雪變厚。", detail: "此時天氣更冷，降雪機會增加。是進補的好時機，也要注意頭部與腳部的保暖。" },
             "冬至": { season: "winter", icon: "🍡", desc: "一年中黑夜最長的一天。", detail: "太陽直射南回歸線。民間有「冬至大如年」的說法，台灣人習慣在這天吃湯圓、補冬。" },
             "小寒": { season: "winter", icon: "🧊", desc: "氣候進入寒冷季節。", detail: "雖然名為「小寒」，但在許多地區，這段時間往往比「大寒」還要寒冷。" },
-            "大寒": { season: "winter", icon: "🏔️", desc: "一年中最冷的尾聲。", detail: "二十四節氣的最後一個。此時正值歲末，充滿了迎接春節、除舊佈新的忙碌氣氛。" }
+            "大寒": { season: "winter", icon: "🏔️", desc: "一年中最冷的尾聲。", detail: "二十四節氣的最後一個。此時正值歲末，充滿了迎接春節、除舊佈新的忙碌氣氣氛。" }
         };
 
         const termOrder = [
@@ -338,11 +337,18 @@
                 const now = new Date();
                 const solar = Solar.fromDate(now);
                 const lunar = solar.getLunar();
-                const solarStr = `${solar.getYear()}年${solar.getMonth()}月${solar.getDay()}日 ${solar.getWeekInChinese()}`;
+                
+                // 將星期加上括號，例如 (四)
+                const solarStr = `${solar.getYear()}年${solar.getMonth()}月${solar.getDay()}日 (${solar.getWeekInChinese()})`;
                 const lunarStr = `農曆 ${lunar.getMonthInChinese()}月${lunar.getDayInChinese()}`;
-                const stemBranch = `${lunar.getDayInGanZhi()}日`;
+                
+                const gzYear = lunar.getYearInGanZhi();
+                const gzMonth = lunar.getMonthInGanZhi();
+                const gzDay = lunar.getDayInGanZhi();
+                const gzFullStr = `${gzYear}年 ${gzMonth}月 ${gzDay}日`;
+
                 document.getElementById('gregorianDate').innerText = solarStr;
-                document.getElementById('lunarAndStems').innerText = `${lunarStr} (${stemBranch})`;
+                document.getElementById('lunarAndStems').innerHTML = `${lunarStr}<br><span class="text-xs text-stone-500 font-bold mt-1 inline-block">${gzFullStr}</span>`;
             } catch (e) {
                 console.error("日期計算出錯", e);
             }
@@ -439,7 +445,6 @@
             return names[s] || '';
         }
 
-        // 修改後的卡片渲染：移除文字、加入當季標籤
         function renderTerms(data, activeTermName = null) {
             const grid = document.getElementById('termsGrid');
             grid.innerHTML = '';
@@ -515,7 +520,12 @@
             
             if (yearSelect.options.length === 0) {
                 for (let i = 1901; i <= 2100; i++) {
-                    const opt = document.createElement('option'); opt.value = i; opt.text = i;
+                    const opt = document.createElement('option'); 
+                    opt.value = i; 
+                    
+                    const tempLunar = Solar.fromYmd(i, 6, 1).getLunar();
+                    opt.text = `${i} ${tempLunar.getYearInGanZhi()}年`;
+                    
                     yearSelect.appendChild(opt);
                 }
                 for (let i = 1; i <= 12; i++) {
@@ -570,7 +580,6 @@
             document.body.style.overflow = 'auto';
         }
 
-        // 萬年曆繁體化映射
         const traditionalJieQiMap = {
             '惊蛰': '驚蟄',
             '谷雨': '穀雨',
@@ -589,9 +598,9 @@
             
             let html = `
                 <div class="calendar-grid-header text-xs md:text-2xl mb-1 md:mb-2 uppercase tracking-wider shrink-0">
-                    <div class="py-1 text-red-400/90">日</div><div class="py-1">一</div><div class="py-1">二</div>
+                    <div class="py-1 text-red-500 font-black">日</div><div class="py-1">一</div><div class="py-1">二</div>
                     <div class="py-1">三</div><div class="py-1">四</div><div class="py-1">五</div>
-                    <div class="py-1 text-stone-400">六</div>
+                    <div class="py-1 text-stone-500">六</div>
                 </div>
                 <div class="calendar-grid-body rounded-2xl md:rounded-[4rem] overflow-hidden bg-white">
             `;
@@ -601,9 +610,10 @@
                 const sol = Solar.fromYmd(year, month, d);
                 const lun = sol.getLunar();
                 const isToday = isCurrentMonth && today.getDate() === d;
-                const lunarRow = `${lun.getMonthInChinese()}月${lun.getDayInChinese()}(${lun.getDayInGanZhi()})`;
                 
-                // 確保節氣顯示為繁體
+                const lunarRow = `${lun.getMonthInChinese()}月${lun.getDayInChinese()}`;
+                const gzRow = `${lun.getMonthInGanZhi()}月 ${lun.getDayInGanZhi()}日`;
+                
                 const jieQi = lun.getJieQi();
                 const displayJieQi = traditionalJieQiMap[jieQi] || jieQi;
                 
@@ -611,7 +621,10 @@
                     <div class="calendar-day group hover:bg-stone-50 transition-all overflow-hidden border-b border-r border-stone-100 text-center">
                         <span class="${isToday ? 'is-today-circle' : 'text-stone-800 font-bold'} text-sm md:text-2xl leading-none">${d}</span>
                         <div class="flex flex-col items-center mt-0.5 md:mt-1 text-center">
-                            <span class="text-[7px] md:text-sm text-stone-400 font-medium leading-tight text-center px-1">${lunarRow}</span>
+                            <!-- 修改處：字體顏色調深 (stone-400 -> stone-600) -->
+                            <span class="text-[7px] md:text-sm text-stone-600 font-bold leading-tight text-center px-1">${lunarRow}</span>
+                            <!-- 修改處：字體顏色調深 (stone-300 -> stone-500) -->
+                            <span class="text-[6px] md:text-[10px] text-stone-500 font-medium leading-tight text-center px-1 mt-0.5">${gzRow}</span>
                         </div>
                         ${displayJieQi ? `<span class="jie-qi-tag">${displayJieQi}</span>` : ''}
                     </div>

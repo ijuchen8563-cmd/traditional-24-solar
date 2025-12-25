@@ -15,14 +15,12 @@
     <link rel="manifest" href="manifest.json">
     
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- 使用 Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
     <!-- 引入專業農曆計算庫 (lunar-javascript) -->
     <script src="https://cdn.jsdelivr.net/npm/lunar-javascript/lunar.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
         
-        /* 基礎設置，確保高度計算準確 */
+        /* 基礎設置 */
         html, body { height: 100%; margin: 0; padding: 0; box-sizing: border-box; }
         *, *:before, *:after { box-sizing: inherit; }
         
@@ -51,6 +49,7 @@
         .current-term-border { outline: 3px solid #78716c; outline-offset: 4px; }
         
         .hero-section {
+            /* 背景清楚透明度設定 (0.4/0.55) */
             background: linear-gradient(rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.55)), 
                         url('https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&q=80&w=2000');
             background-size: cover;
@@ -85,12 +84,12 @@
 
         #calendarScrollWrapper {
             flex-grow: 1;
-            overflow: auto; /* 核心：允許放大後捲動 */
+            overflow: auto;
             display: flex;
             flex-direction: column;
             min-height: 0;
             position: relative;
-            -webkit-overflow-scrolling: touch; /* iOS 流暢捲動 */
+            -webkit-overflow-scrolling: touch;
         }
 
         #calendarContent {
@@ -99,9 +98,8 @@
             display: flex;
             flex-direction: column;
             padding: 8px;
-            transform-origin: top left; /* 改為左上角縮放以利捲動計算 */
+            transform-origin: top left;
             transition: transform 0.1s ease-out;
-            /* 移除 touch-none，允許單指滑動 */
         }
 
         .calendar-grid-header {
@@ -140,16 +138,16 @@
             background-color: #1c1917;
             color: white;
             border-radius: 50%;
-            width: 26px;
-            height: 26px;
+            width: 30px;
+            height: 30px;
             display: inline-flex;
             align-items: center;
             justify-content: center;
             font-weight: 700;
-            font-size: 0.85rem;
         }
         @media (min-width: 768px) {
-            .is-today-circle { width: 34px; height: 34px; font-size: 1.1rem; }
+            /* 電腦版圓圈尺寸適中 */
+            .is-today-circle { width: 30px; height: 30px; font-size: 1rem; }
         }
         
         .jie-qi-tag {
@@ -163,7 +161,7 @@
             white-space: nowrap;
         }
         @media (min-width: 768px) {
-            .jie-qi-tag { font-size: 0.8rem; padding: 2px 8px; margin-top: 2px; }
+            .jie-qi-tag { font-size: 0.75rem; padding: 1px 6px; transform: scale(0.9); }
         }
 
         .custom-select {
@@ -180,11 +178,11 @@
     <!-- 頂部區 -->
     <header class="hero-section relative py-10 md:py-16 text-stone-900 border-b border-stone-100 text-center">
         <div class="container mx-auto px-6 relative z-10 text-center">
-            <h1 class="text-3xl sm:text-5xl md:text-7xl font-bold serif-font mb-6 tracking-[0.4em] text-stone-800 opacity-90 text-center whitespace-nowrap">二十四節氣</h1>
+            <h1 class="text-4xl sm:text-5xl md:text-7xl font-bold serif-font mb-6 tracking-[0.4em] text-stone-800 opacity-90 text-center whitespace-nowrap">二十四節氣</h1>
             <div class="bg-white/50 backdrop-blur-lg inline-block px-10 py-4 rounded-2xl border border-stone-200/50 shadow-sm text-center">
-                <div id="fullDateDisplay" class="text-base md:text-xl font-medium tracking-[0.1em] flex flex-col items-center gap-1">
+                <div id="fullDateDisplay" class="text-xl md:text-xl font-medium tracking-[0.1em] flex flex-col items-center gap-1">
                     <span id="gregorianDate" class="text-stone-800 font-bold tracking-widest">載入中...</span>
-                    <span id="lunarAndStems" class="text-stone-600 border-t border-stone-200 pt-2 mt-1 w-full text-sm font-medium"></span>
+                    <span id="lunarAndStems" class="text-stone-700 border-t border-stone-200 pt-2 mt-1 w-full text-base md:text-sm font-medium"></span>
                 </div>
             </div>
         </div>
@@ -302,14 +300,14 @@
     <script>
         const ICS_URL = "https://raw.githubusercontent.com/KaitoHH/24-jieqi-ics/master/23_solar_terms_2015-01-01_2050-12-31.ics";
 
-        // 節氣詳細內容
+        // 節氣詳細內容 - 全繁體校對
         const solarTermsInfo = {
             "立春": { season: "spring", icon: "🌱", desc: "春季的開始，大地萬物復甦。", detail: "「立」是開始的意思。立春過後，白晝變長，氣溫回暖。民間有咬春（吃春餅或蘿蔔）的習俗。" },
             "雨水": { season: "spring", icon: "🌧️", desc: "降雨開始增加，氣溫升高。", detail: "降雪減少，降雨增多。農民開始為春耕做準備，象徵著草木隨雨水而生長。" },
             "驚蟄": { season: "spring", icon: "⚡", desc: "春雷驚醒冬眠中的昆蟲。", detail: "驚蟄時節氣溫回升較快，春雷始鳴。古人認為雷聲喚醒了土裡的蟲子。" },
             "春分": { season: "spring", icon: "⚖️", desc: "晝夜等長，平分春季。", detail: "這一天太陽直射赤道。過了這一天，北半球白晝開始長於黑夜，是踏青的好時機。" },
-            "清明": { season: "spring", icon: "🕯️", desc: "天氣清澈明亮，祭祖掃墓。", detail: "既是節氣也是節日。萬物吐故納新，氣溫轉暖，草木繁茂。也是重要的祭祀與踏青節日。" },
-            "穀雨": { season: "spring", icon: "🌾", desc: "雨水增多，利於谷類生長。", detail: "「雨生百穀」。這是春季最後一個節氣，此時田裡的秧苗最需要雨水的灌溉。" },
+            "清明": { season: "spring", icon: "🕯️", desc: "天氣清澈明亮，祭祖掃墓。", detail: "既是節氣也是節日。萬物吐故納新，氣溫轉暖，草夢繁茂。也是重要的祭祀與踏青節日。" },
+            "穀雨": { season: "spring", icon: "🌾", desc: "雨水增多，利於穀類生長。", detail: "「雨生百穀」。這是春季最後一個節氣，此時田裡的秧苗最需要雨水的灌溉。" },
             "立夏": { season: "summer", icon: "☀️", desc: "夏季的開始，氣溫上升。", detail: "立夏表示萬物進入旺盛生長期。民間有喝「立夏茶」、吃「立夏飯」的習俗。" },
             "小滿": { season: "summer", icon: "🥣", desc: "穀類果實開始飽滿但未成熟。", detail: "「小滿」指穀物籽粒開始飽滿，但還未完全成熟，就像人生適度、不求全滿的智慧。" },
             "芒種": { season: "summer", icon: "🚜", desc: "有芒作物成熟，忙於播種。", detail: "諧音「忙著種」。這是農民最忙碌的時節，既要收穫又要播種，象徵辛勤的汗水。" },
@@ -323,8 +321,8 @@
             "寒露": { season: "autumn", icon: "🧥", desc: "露水轉寒，氣溫更低。", detail: "露水增多，且氣溫更冷，快要凝結成霜。此時是登山遠眺、觀賞紅葉的好時節。" },
             "霜降": { season: "autumn", icon: "❄️", desc: "開始見到霜，寒意明顯。", detail: "秋季的最後一個節氣。氣候轉冷，大地開始出現初霜，象徵秋天即將結束。" },
             "立冬": { season: "winter", icon: "🧤", desc: "冬季的開始，萬物冬藏。", detail: "「冬」有終的意思。農作物已收曬入庫，動物準備冬眠。這也是補冬、食補的好時機。" },
-            "小雪": { season: "winter", icon: "🌨️", desc: "氣溫降至零度，偶有飄雪。", detail: "北方開始降雪，但規模不大。南方則進入明顯的乾冷季節。民間開始醃製臘肉。" },
-            "大雪": { season: "winter", icon: "☃️", desc: "降雪範圍擴大，積雪變厚。", detail: "此時天氣更冷，降雪機會增加。是進補的好時機，也要注意頭部與腳部的保塊。" },
+            "小雪": { season: "winter", icon: "🌨️", desc: "氣溫降至零度，偶有飄雪。", detail: "北方開始結合降雪，但規模不大。南方則進入明顯的乾冷季節。民間開始醃製臘肉。" },
+            "大雪": { season: "winter", icon: "☃️", desc: "降雪範圍擴大，積雪變厚。", detail: "此時天氣更冷，降雪機會增加。是進補的好時機，也要注意頭部與腳部的保暖。" },
             "冬至": { season: "winter", icon: "🍡", desc: "一年中黑夜最長的一天。", detail: "太陽直射南回歸線。民間有「冬至大如年」的說法，台灣人習慣在這天吃湯圓、補冬。" },
             "小寒": { season: "winter", icon: "🧊", desc: "氣候進入寒冷季節。", detail: "雖然名為「小寒」，但在許多地區，這段時間往往比「大寒」還要寒冷。" },
             "大寒": { season: "winter", icon: "🏔️", desc: "一年中最冷的尾聲。", detail: "二十四節氣的最後一個。此時正值歲末，充滿了迎接春節、除舊佈新的忙碌氣氛。" }
@@ -340,7 +338,6 @@
         let computedSolarTerms = [];
         let cloudDataStore = {};
         
-        // 觸控與縮放狀態
         let touchState = {
             scale: 1,
             lastScale: 1,
@@ -367,7 +364,8 @@
                 const gzFullStr = `${gzYear}年 ${gzMonth}月 ${gzDay}日`;
 
                 document.getElementById('gregorianDate').innerText = solarStr;
-                document.getElementById('lunarAndStems').innerHTML = `${lunarStr}<br><span class="text-xs text-stone-700 font-bold mt-1 inline-block">${gzFullStr}</span>`;
+                // 手機放大至 text-base (16px)，電腦維持原始 md:text-sm (14px)
+                document.getElementById('lunarAndStems').innerHTML = `${lunarStr}<br><span class="text-base md:text-sm text-stone-700 font-bold mt-1 inline-block">${gzFullStr}</span>`;
             } catch (e) {
                 console.error("日期計算出錯", e);
             }
@@ -479,8 +477,9 @@
                         ${isToday ? '<span class="bg-stone-800 text-white text-[10px] px-2 py-0.5 rounded-full font-bold tracking-widest animate-pulse shadow-sm">當季</span>' : ''}
                     </div>
                     <h3 class="text-2xl font-bold serif-font mb-2 text-stone-800 leading-tight">${term.name}</h3>
-                    <p class="text-stone-500 text-sm mb-3 font-mono leading-none">${currentYear} · ${term.formattedDate}</p>
-                    <p class="text-stone-600 line-clamp-2 text-sm leading-relaxed">${term.desc}</p>
+                    <!-- 手機文字放大 text-base，電腦維持原本 sm:text-sm -->
+                    <p class="text-stone-500 text-base sm:text-sm mb-3 font-mono leading-none">${currentYear} · ${term.formattedDate}</p>
+                    <p class="text-stone-600 line-clamp-2 text-base sm:text-sm leading-relaxed">${term.desc}</p>
                     <div class="mt-4 text-stone-400 text-xs font-bold uppercase tracking-wider">
                         ${getSeasonName(term.season)} 季
                     </div>
@@ -559,20 +558,17 @@
             const calContent = document.getElementById('calendarContent');
             const scrollWrapper = document.getElementById('calendarScrollWrapper');
 
-            // 電腦滾輪縮放與切換
             scrollWrapper.onwheel = (e) => {
                 if (e.ctrlKey) {
                     e.preventDefault();
                     const delta = e.deltaY > 0 ? -0.1 : 0.1;
                     applyZoom(touchState.scale + delta);
                 } else if (touchState.scale === 1) {
-                    // 只有在 1:1 時滾輪才切換月份，防止縮放後滑動誤觸
                     e.preventDefault();
                     changeCalendarMonth(e.deltaY > 0 ? 1 : -1);
                 }
             };
 
-            // 手機觸控處理
             calContent.addEventListener('touchstart', (e) => {
                 if (e.touches.length === 2) {
                     touchState.isPinching = true;
@@ -588,17 +584,13 @@
 
             calContent.addEventListener('touchmove', (e) => {
                 if (e.touches.length === 2 && touchState.isPinching) {
-                    e.preventDefault(); // 雙指縮放時禁止捲動
+                    e.preventDefault();
                     const currentDistance = Math.hypot(
                         e.touches[0].pageX - e.touches[1].pageX,
                         e.touches[0].pageY - e.touches[1].pageY
                     );
                     const zoomFactor = currentDistance / touchState.initialDistance;
                     applyZoom(touchState.lastScale * zoomFactor);
-                } else if (touchState.scale > 1) {
-                    // 放大狀態下，單指移動由瀏覽器原生捲動處理，不 preventDefault
-                } else if (e.touches.length === 1 && touchState.scale === 1) {
-                    // 1:1 狀態下可以滑動切換月份，但不要 preventDefault 否則會卡住
                 }
             }, { passive: false });
 
@@ -607,7 +599,6 @@
                     touchState.lastScale = touchState.scale;
                     touchState.isPinching = false;
                 } else if (touchState.scale === 1) {
-                    // 只有 1:1 時才判定滑動切換月份
                     let touchEndY = e.changedTouches[0].pageY;
                     const threshold = 50; 
                     if (touchEndY < touchState.touchStartY - threshold) changeCalendarMonth(1); 
@@ -619,15 +610,8 @@
         function applyZoom(newScale) {
             touchState.scale = Math.min(Math.max(1, newScale), 3);
             const content = document.getElementById('calendarContent');
-            
-            // 修正點：同時使用 transform 與調整 width/height
-            // 這樣 overflow: auto 才能計算出正確的捲動區域
             content.style.transform = `scale(${touchState.scale})`;
-            
-            // 設定實體寬度，讓捲軸出現
             content.style.width = (100 * touchState.scale) + "%";
-            
-            // 如果是 1:1 則恢復原狀
             if (touchState.scale <= 1) {
                 content.style.width = "100%";
                 content.style.transform = "scale(1)";
@@ -674,7 +658,8 @@
             const isCurrentMonth = today.getFullYear() === year && (today.getMonth() + 1) === month;
             
             let html = `
-                <div class="calendar-grid-header text-xs md:text-2xl mb-1 md:mb-2 uppercase tracking-wider shrink-0">
+                <!-- 星期標題：手機 text-sm | 電腦 md:text-sm 適中 -->
+                <div class="calendar-grid-header text-sm md:text-sm mb-1 md:mb-1 uppercase tracking-wider shrink-0">
                     <div class="py-1 text-red-600 font-black">日</div><div class="py-1">一</div><div class="py-1">二</div>
                     <div class="py-1">三</div><div class="py-1">四</div><div class="py-1">五</div>
                     <div class="py-1 text-stone-800 font-bold">六</div>
@@ -695,12 +680,17 @@
                 
                 html += `
                     <div class="calendar-day group hover:bg-stone-50 transition-all overflow-hidden border-b border-r border-stone-100 text-center">
-                        <span class="${isToday ? 'is-today-circle' : 'text-stone-900 font-black'} text-sm md:text-2xl leading-none">${d}</span>
-                        <div class="flex flex-col items-center mt-0.5 md:mt-1 text-center">
-                            <span class="text-[7px] md:text-sm text-stone-900 font-bold leading-tight text-center px-1">${lunarRow}</span>
-                            <div class="flex flex-col sm:flex-row sm:flex-nowrap items-center justify-center sm:gap-1 mt-0.5 md:mt-0 leading-tight">
-                                <span class="text-[6px] md:text-[10px] text-stone-700 font-bold whitespace-nowrap">${gzMonth}</span>
-                                <span class="text-[6px] md:text-[10px] text-stone-700 font-bold whitespace-nowrap">${gzDay}</span>
+                        <!-- 公曆數字：手機 text-lg | 電腦 md:text-sm 緊湊排版 -->
+                        <span class="${isToday ? 'is-today-circle' : 'text-stone-900 font-black'} text-lg md:text-sm leading-none">${d}</span>
+                        <div class="flex flex-col items-center mt-0.5 md:mt-0 text-center leading-tight">
+                            <!-- 農曆文字：手機 text-[11px] | 電腦 md:text-[9px] 確保寬度 -->
+                            <span class="text-[11px] md:text-[9px] text-stone-900 font-bold px-1 whitespace-nowrap">${lunarRow}</span>
+                            
+                            <!-- 核心排版：手機 flex-col (分行) | 電腦 md:flex-row + md:flex-nowrap (絕對不換行) -->
+                            <div class="flex flex-col md:flex-row md:flex-nowrap items-center justify-center md:gap-0.5 mt-0.5 md:mt-0 leading-none">
+                                <!-- 電腦版干支縮小至 8px 且強制不換行，避免擠出格子 -->
+                                <span class="text-[10px] md:text-[8px] text-stone-700 font-bold whitespace-nowrap">${gzMonth}</span>
+                                <span class="text-[10px] md:text-[8px] text-stone-700 font-bold whitespace-nowrap">${gzDay}</span>
                             </div>
                         </div>
                         ${displayJieQi ? `<span class="jie-qi-tag">${displayJieQi}</span>` : ''}

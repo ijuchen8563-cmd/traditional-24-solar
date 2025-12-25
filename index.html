@@ -153,15 +153,16 @@
         .jie-qi-tag {
             background-color: #f0fdf4;
             color: #166534;
-            padding: 1px 4px;
+            padding: 2px 4px;
             border-radius: 4px;
-            font-size: 8px;
+            font-size: 11px; /* 手機版字體加大 */
             font-weight: 800;
-            margin-top: 1px;
+            margin-top: 2px;
             white-space: nowrap;
         }
         @media (min-width: 768px) {
-            .jie-qi-tag { font-size: 0.75rem; padding: 1px 6px; transform: scale(0.9); }
+            /* 電腦版維持原始樣式 */
+            .jie-qi-tag { font-size: 0.75rem; padding: 1px 6px; transform: scale(0.9); margin-top: 1px; }
         }
 
         .custom-select {
@@ -322,7 +323,7 @@
             "霜降": { season: "autumn", icon: "❄️", desc: "開始見到霜，寒意明顯。", detail: "秋季的最後一個節氣。氣候轉冷，大地開始出現初霜，象徵秋天即將結束。" },
             "立冬": { season: "winter", icon: "🧤", desc: "冬季的開始，萬物冬藏。", detail: "「冬」有終的意思。農作物已收曬入庫，動物準備冬眠。這也是補冬、食補的好時機。" },
             "小雪": { season: "winter", icon: "🌨️", desc: "氣溫降至零度，偶有飄雪。", detail: "北方開始結合降雪，但規模不大。南方則進入明顯的乾冷季節。民間開始醃製臘肉。" },
-            "大雪": { season: "winter", icon: "☃️", desc: "降雪範圍擴大，積雪變厚。", detail: "此時天氣更冷，降雪機會增加。是進補的好時機，也要注意頭部與腳部的保暖。" },
+            "大雪": { season: "winter", icon: "☃️", desc: "降雪範圍擴大，積雪變厚。", detail: "此時天氣更冷，降雪機會增加。是進補的好時機，也要注意頭部與腳部的保塊。" },
             "冬至": { season: "winter", icon: "🍡", desc: "一年中黑夜最長的一天。", detail: "太陽直射南回歸線。民間有「冬至大如年」的說法，台灣人習慣在這天吃湯圓、補冬。" },
             "小寒": { season: "winter", icon: "🧊", desc: "氣候進入寒冷季節。", detail: "雖然名為「小寒」，但在許多地區，這段時間往往比「大寒」還要寒冷。" },
             "大寒": { season: "winter", icon: "🏔️", desc: "一年中最冷的尾聲。", detail: "二十四節氣的最後一個。此時正值歲末，充滿了迎接春節、除舊佈新的忙碌氣氛。" }

@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        /* 針對手機桌面的美化樣式 */
+        #widget-display {
+            color: #4b443d; /* 深咖啡色，適合木質或花卉風格 */
+            text-align: center;
+            font-family: 'Noto Serif TC', serif;
+            /* 加入微弱的白色光暈，防止背景太花導致看不清字 */
+            text-shadow: 0px 0px 8px rgba(255, 255, 255, 0.8), 1px 1px 2px rgba(255, 255, 255, 1);
+            padding: 10px;
+        }
+        #w-lunar { font-size: 1.3rem; font-weight: bold; margin-bottom: 2px; }
+        #w-ganzhi { font-size: 0.9rem; opacity: 0.85; margin-bottom: 4px; letter-spacing: 1px; }
+        #w-term { 
+            font-size: 1rem; 
+            color: #8b7355; 
+            font-weight: bold; 
+            border-top: 1px solid rgba(139, 115, 85, 0.2);
+            padding-top: 4px;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+
+<div id="widget-display">
+    <div id="w-lunar">載入中...</div>
+    <div id="w-ganzhi"></div>
+    <div id="w-term"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/lunar-javascript/lunar.js"></script>
+<script>
+    function updateWidget() {
+        if (typeof Solar === 'undefined') return;
+        const now = new Date();
+        const solar = Solar.fromDate(now);
+        const lunar = solar.getLunar();
+        
+        // 1. 顯示：農曆月日 (例如：冬月廿四)
+        document.getElementById('w-lunar').innerText = lunar.getMonthInChinese() + '月' + lunar.getDayInChinese();
+        
+        // 2. 顯示：完整的干支資訊 (例如：乙巳年 丁亥日)
+        document.getElementById('w-ganzhi').innerText = lunar.getYearInGanZhi() + '年 ' + lunar.getDayInGanZhi() + '日';
+        
+        // 3. 顯示：當前節氣 (改為顯示目前的「節氣區段」)
+        // 邏輯：獲取當前日期所屬的節氣
+        const currentJieQi = lunar.getPrevJieQi().getName(); 
+        document.getElementById('w-term').innerText = "節氣：" + currentJieQi;
+    }
+
+    // 每分鐘更新一次即可，節省電力
+    setInterval(updateWidget, 60000);
+    updateWidget();
+</script>
+
+</body>
+</html>

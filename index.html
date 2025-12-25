@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>歲月流轉：二十四節氣大百科</title>
+    <!-- 使用 Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入專業農曆計算庫 (lunar-javascript) -->
+    <script src="https://cdn.jsdelivr.net/npm/lunar-javascript/lunar.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
+        
+        /* 基礎設置，確保高度計算準確 */
+        html, body { height: 100%; margin: 0; padding: 0; box-sizing: border-box; }
+        *, *:before, *:after { box-sizing: inherit; }
+        
+        body { font-family: 'Noto Sans TC', sans-serif; scroll-behavior: smooth; }
+        .serif-font { font-family: 'Noto Serif TC', serif; }
+        
+        /* 卡片樣式：彩色外框 + 扁平白底結構 (圖1 邏輯) */
+        .season-spring { border: 2px solid #a7d08c !important; }
+        .season-summer { border: 2px solid #ff9b9b !important; }
+        .season-autumn { border: 2px solid #ffcc80 !important; }
+        .season-winter { border: 2px solid #90caf9 !important; }
+
+        .term-card { 
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            background-color: white;
+            position: relative;
+        }
+        .term-card:hover { 
+            transform: translateY(-8px); 
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.08);
+        }
+
+        .current-term-border { outline: 3px solid #78716c; outline-offset: 4px; }
+        
+        .hero-section {
+            background: linear-gradient(rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.85)), 
+                        url('https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&q=80&w=2000');
+            background-size: cover;
+            background-position: center;
+        }
+
+        /* 月曆核心排版：使用原生 CSS 確保無痕模式穩定 */
+        #calendarModal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 50;
+            background-color: rgba(28, 25, 23, 0.4);
+            backdrop-filter: blur(8px);
+            align-items: center;
+            justify-content: center;
+            padding: 4px;
+        }
+        #calendarModal.active { display: flex; }
+
+        .calendar-container {
+            background: white;
+            width: 100%;
+            max-width: 80rem;
+            height: 96vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            border-radius: 2rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        }
+
+        #calendarContent {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+            padding: 8px;
+        }
+
+        .calendar-grid-header {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            flex-shrink: 0;
+            text-align: center;
+            font-weight: bold;
+            color: #a8a29e;
+        }
+
+        .calendar-grid-body {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            grid-template-rows: repeat(6, 1fr); 
+            flex-grow: 1;
+            height: 100%;
+            border-top: 1px solid #f1f0ee;
+            border-left: 1px solid #f1f0ee;
+        }
+
+        .calendar-day {
+            border-bottom: 1px solid #f1f0ee;
+            border-right: 1px solid #f1f0ee;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2px;
+            background-color: white;
+            overflow: hidden;
+            min-height: 0;
+        }
+        
+        .is-today-circle {
+            background-color: #1c1917;
+            color: white;
+            border-radius: 50%;
+            width: 26px;
+            height: 26px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.85rem;
+        }
+        @media (min-width: 768px) {
+            .is-today-circle { width: 34px; height: 34px; font-size: 1.1rem; }
+        }
+        
+        .jie-qi-tag {
+            background-color: #f0fdf4;
+            color: #166534;
+            padding: 1px 4px;
+            border-radius: 4px;
+            font-size: 8px;
+            font-weight: 800;
+            margin-top: 1px;
+            white-space: nowrap;
+        }
+        @media (min-width: 768px) {
+            .jie-qi-tag { font-size: 0.8rem; padding: 2px 8px; margin-top: 2px; }
+        }
+
+        .custom-select {
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2378716c' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 0.4rem center;
+            background-size: 0.7em;
+            padding-right: 1.2rem;
+        }
+    </style>
+</head>
+<body class="bg-stone-50 text-stone-800">
+
+    <!-- 頂部區：修正標題在手機版換行的問題 -->
+    <header class="hero-section relative py-10 md:py-16 text-stone-900 border-b border-stone-100 text-center">
+        <div class="container mx-auto px-6 relative z-10 text-center">
+            <h1 class="text-3xl sm:text-5xl md:text-7xl font-bold serif-font mb-6 tracking-[0.4em] text-stone-800 opacity-90 text-center whitespace-nowrap">二十四節氣</h1>
+            <div class="bg-white/50 backdrop-blur-lg inline-block px-10 py-4 rounded-2xl border border-stone-200/50 shadow-sm text-center">
+                <div id="fullDateDisplay" class="text-base md:text-xl font-medium tracking-[0.1em] flex flex-col items-center gap-1">
+                    <span id="gregorianDate" class="text-stone-800 font-bold tracking-widest">載入中...</span>
+                    <span id="lunarAndStems" class="text-stone-600 border-t border-stone-200 pt-2 mt-1 w-full text-sm font-medium"></span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 控制區 -->
+    <section class="container mx-auto px-6 -mt-8 relative z-20">
+        <div class="bg-white/95 backdrop-blur-md rounded-2xl shadow-xl p-4 border border-white">
+            <div class="grid grid-cols-1 gap-4 md:flex md:flex-row md:justify-between md:items-center">
+                <div class="flex items-center gap-3 w-full md:w-auto">
+                    <div class="flex items-center gap-2 bg-stone-50 px-3 py-2 rounded-xl border border-stone-100 flex-1 md:flex-none">
+                        <label for="yearInput" class="text-stone-400 text-[10px] font-bold">年份</label>
+                        <input type="number" id="yearInput" min="1901" max="2100" 
+                               class="bg-transparent w-14 text-center font-bold text-stone-800 focus:outline-none text-sm"
+                               onchange="handleYearChange()">
+                    </div>
+                    <div class="flex items-center gap-2 bg-stone-50 px-3 py-2 rounded-xl border border-stone-100 flex-1 md:flex-none">
+                        <label class="text-stone-400 text-[10px] font-bold">季節</label>
+                        <select onchange="filterSeason(this.value)" class="custom-select bg-transparent font-bold text-stone-800 focus:outline-none text-sm cursor-pointer w-full">
+                            <option value="all">全部</option>
+                            <option value="spring">春</option>
+                            <option value="summer">夏</option>
+                            <option value="autumn">秋</option>
+                            <option value="winter">冬</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3 w-full md:w-auto">
+                    <div class="flex-grow md:flex-none">
+                        <input type="text" id="searchInput" placeholder="尋找節氣..." onkeyup="searchTerms()" 
+                               class="w-full md:w-40 px-4 py-2 bg-stone-50 border border-stone-100 rounded-xl focus:outline-none focus:ring-1 focus:ring-stone-200 text-sm">
+                    </div>
+                    <button onclick="openCalendar()" class="bg-stone-50 text-stone-500 border border-stone-200 px-5 py-2 rounded-xl hover:bg-stone-200 transition-all flex items-center gap-2 whitespace-nowrap text-xs font-bold">
+                        <span>📅</span> 月曆
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 節氣網格 -->
+    <main class="container mx-auto px-6 py-16">
+        <div id="loadingIndicator" class="flex justify-center mb-10 hidden">
+            <div class="loader"></div>
+        </div>
+        <div id="termsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-10"></div>
+    </main>
+
+    <!-- 詳情 Modal -->
+    <div id="modal" class="fixed inset-0 bg-stone-900/30 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-[2.5rem] max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-stone-50 text-center">
+            <div id="modalContent" class="p-8 md:p-12 text-center"></div>
+            <div class="border-t border-stone-50 p-8 flex justify-end">
+                <button onclick="closeModal()" class="px-12 py-3 bg-stone-800 text-white rounded-full hover:bg-stone-700 transition-colors font-bold tracking-widest text-sm">返回</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 修正後的月曆 Modal：獨立結構 -->
+    <div id="calendarModal">
+        <div class="calendar-container">
+            <!-- 頂部導覽列 -->
+            <div class="px-5 py-3 md:px-12 md:py-6 border-b border-stone-100 flex flex-row justify-between items-center bg-white shrink-0">
+                <div class="flex items-center gap-2 md:gap-8">
+                    <h2 class="hidden sm:block text-xl md:text-4xl font-bold serif-font text-stone-800 mr-2 tracking-wider">萬年曆查詢</h2>
+                    <select id="calYearSelect" onchange="renderCalendarContent()" class="bg-stone-50 px-2 py-1 rounded-xl border border-stone-200 font-bold focus:outline-none text-base md:text-3xl shadow-sm"></select>
+                    <span class="font-bold text-stone-400 text-sm md:text-xl">年</span>
+                    <select id="calMonthSelect" onchange="renderCalendarContent()" class="bg-stone-50 px-2 py-1 rounded-xl border border-stone-200 font-bold focus:outline-none text-base md:text-3xl shadow-sm"></select>
+                    <span class="font-bold text-stone-400 text-sm md:text-2xl">月</span>
+                </div>
+                
+                <!-- 右上角關閉按鈕 -->
+                <button onclick="closeCalendar()" class="w-9 h-9 md:w-14 md:h-14 flex items-center justify-center bg-stone-100 hover:bg-stone-800 hover:text-white rounded-full transition-all text-stone-500 shadow-sm">
+                    <svg class="w-6 h-6 md:w-9 md:h-9" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            
+            <!-- 月曆主體 -->
+            <div id="calendarContent" class="touch-none text-center">
+                <!-- 由 JavaScript 渲染 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 頁尾 -->
+    <footer class="bg-stone-100 py-12 text-center text-stone-400 border-t border-stone-200">
+        <div class="container mx-auto px-6 text-center">
+            <div class="serif-font text-xl mb-6 text-stone-700 tracking-widest font-bold text-center">「天行健，君子以自強不息。」</div>
+            
+            <div class="mb-8">
+                <h4 class="text-xs font-bold text-stone-400 uppercase tracking-widest mb-4">參考文獻與技術支援</h4>
+                <ul class="flex flex-wrap justify-center gap-x-8 gap-y-2 text-[11px]">
+                    <li>
+                        <span class="block text-stone-400 mb-1">農曆與干支運算</span>
+                        <a href="https://github.com/667120/lunar-javascript" target="_blank" class="text-stone-500 hover:text-stone-800 underline transition-colors font-medium">lunar-javascript</a>
+                    </li>
+                    <li>
+                        <span class="block text-stone-400 mb-1">二十四節氣數據庫</span>
+                        <a href="https://github.com/KaitoHH/24-jieqi-ics" target="_blank" class="text-stone-500 hover:text-stone-800 underline transition-colors font-medium">24-jieqi-ics</a>
+                    </li>
+                    <li>
+                        <span class="block text-stone-400 mb-1">網頁排版框架</span>
+                        <a href="https://tailwindcss.com/" target="_blank" class="text-stone-500 hover:text-stone-800 underline transition-colors font-medium">Tailwind CSS</a>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="text-xs text-stone-400 italic font-light tracking-widest">版本日期2025/12/25</div>
+        </div>
+    </footer>
+
+    <script>
+        const ICS_URL = "https://raw.githubusercontent.com/KaitoHH/24-jieqi-ics/master/23_solar_terms_2015-01-01_2050-12-31.ics";
+
+        // 節氣詳細內容 - 全面轉為繁體並修正錯字
+        const solarTermsInfo = {
+            "立春": { season: "spring", icon: "🌱", desc: "春季的開始，大地萬物復甦。", detail: "「立」是開始的意思。立春過後，白晝變長，氣溫回暖。民間有咬春（吃春餅或蘿蔔）的習俗。" },
+            "雨水": { season: "spring", icon: "🌧️", desc: "降雨開始增加，氣溫升高。", detail: "降雪減少，降雨增多。農民開始為春耕做準備，象徵著草木隨雨水而生長。" },
+            "驚蟄": { season: "spring", icon: "⚡", desc: "春雷驚醒冬眠中的昆蟲。", detail: "驚蟄時節氣溫回升較快，春雷始鳴。古人認為雷聲喚醒了土裡的蟲子。" },
+            "春分": { season: "spring", icon: "⚖️", desc: "晝夜等長，平分春季。", detail: "這一天太陽直射赤道。過了這一天，北半球白晝開始長於黑夜，是踏青的好時機。" },
+            "清明": { season: "spring", icon: "🕯️", desc: "天氣清澈明亮，祭祖掃墓。", detail: "既是節氣也是節日。萬物吐故納新，氣溫轉暖，草木繁茂。也是重要的祭祀與踏青節日。" },
+            "穀雨": { season: "spring", icon: "🌾", desc: "雨水增多，利於谷類生長。", detail: "「雨生百穀」。這是春季最後一個節氣，此時田裡的秧苗最需要雨水的灌溉。" },
+            "立夏": { season: "summer", icon: "☀️", desc: "夏季的開始，氣溫上升。", detail: "立夏表示萬物進入旺盛生長期。民間有喝「立夏茶」、吃「立夏飯」的習俗。" },
+            "小滿": { season: "summer", icon: "🥣", desc: "穀類果實開始飽滿但未成熟。", detail: "「小滿」指穀物籽粒開始飽滿，但還未完全成熟，就像人生適度、不求全滿的智慧。" },
+            "芒種": { season: "summer", icon: "🚜", desc: "有芒作物成熟，忙於播種。", detail: "諧音「忙著種」。這是農民最忙碌的時節，既要收穫又要播種，象徵辛勤的汗水。" },
+            "夏至": { season: "summer", icon: "🗼", desc: "一年中白晝最長的一天。", detail: "這天太陽直射北回歸線。雖然白晝最長，但最熱的時候通常在之後的「三伏天」。" },
+            "小暑": { season: "summer", icon: "💧", desc: "天氣開始炎熱。", detail: "小暑代表天氣剛開始熱，但還沒到最熱。這時民間有「食新」的習慣，品嚐新產的穀物。" },
+            "大暑": { season: "summer", icon: "🔥", desc: "一年中最熱的時期。", detail: "大暑正值中伏前後，濕熱難耐。要多喝水、防暑降溫，民間也有吃仙草、吃鳳梨的習俗。" },
+            "立秋": { season: "autumn", icon: "🍂", desc: "秋季的開始，暑氣漸退。", detail: "立秋代表炎熱的夏天即將過去。雖然還有「秋老虎」，但早晚空氣開始有了一絲涼意。" },
+            "處暑": { season: "autumn", icon: "🌥️", desc: "暑氣結束，天氣轉涼。", detail: "「處」有止的意思。代表炎熱的暑氣到此為止，秋天正式接管大地。" },
+            "白露": { season: "autumn", icon: "💧", desc: "清晨草木有白色露珠。", detail: "氣溫下降幅度變大，早晚溫差增加，水氣凝結成白色的露珠。古人說：「白露勿露身」。" },
+            "秋分": { season: "autumn", icon: "🌕", desc: "晝夜再等長，秋意漸濃。", detail: "平分了秋季。此後北半球夜長於晝，秋燥也變得明顯，建議多食用滋潤的食物。" },
+            "寒露": { season: "autumn", icon: "🧥", desc: "露水轉寒，氣溫更低。", detail: "露水增多，且氣溫更冷，快要凝結成霜。此時是登山遠眺、觀賞紅葉的好時節。" },
+            "霜降": { season: "autumn", icon: "❄️", desc: "開始見到霜，寒意明顯。", detail: "秋季的最後一個節氣。氣候轉冷，大地開始出現初霜，象徵秋天即將結束。" },
+            "立冬": { season: "winter", icon: "🧤", desc: "冬季的開始，萬物冬藏。", detail: "「冬」有終的意思。農作物已收曬入庫，動物準備冬眠。這也是補冬、食補的好時機。" },
+            "小雪": { season: "winter", icon: "🌨️", desc: "氣溫降至零度，偶有飄雪。", detail: "北方開始降雪，但規模不大。南方則進入明顯的乾冷季節。民間開始醃製臘肉。" },
+            "大雪": { season: "winter", icon: "☃️", desc: "降雪範圍擴大，積雪變厚。", detail: "此時天氣更冷，降雪機會增加。是進補的好時機，也要注意頭部與腳部的保暖。" },
+            "冬至": { season: "winter", icon: "🍡", desc: "一年中黑夜最長的一天。", detail: "太陽直射南回歸線。民間有「冬至大如年」的說法，台灣人習慣在這天吃湯圓、補冬。" },
+            "小寒": { season: "winter", icon: "🧊", desc: "氣候進入寒冷季節。", detail: "雖然名為「小寒」，但在許多地區，這段時間往往比「大寒」還要寒冷。" },
+            "大寒": { season: "winter", icon: "🏔️", desc: "一年中最冷的尾聲。", detail: "二十四節氣的最後一個。此時正值歲末，充滿了迎接春節、除舊佈新的忙碌氣氛。" }
+        };
+
+        const termOrder = [
+            "小寒", "大寒", "立春", "雨水", "驚蟄", "春分", "清明", "穀雨",
+            "立夏", "小滿", "芒種", "夏至", "小暑", "大暑", "立秋", "處暑",
+            "白露", "秋分", "寒露", "霜降", "立冬", "小雪", "大雪", "冬至"
+        ];
+
+        let currentYear = new Date().getFullYear();
+        let computedSolarTerms = [];
+        let cloudDataStore = {};
+        let calendarScrollThrottle = false;
+        let touchStartY = 0;
+
+        function updateTodayInfo() {
+            if (typeof Solar === 'undefined') {
+                setTimeout(updateTodayInfo, 100);
+                return;
+            }
+            try {
+                const now = new Date();
+                const solar = Solar.fromDate(now);
+                const lunar = solar.getLunar();
+                const solarStr = `${solar.getYear()}年${solar.getMonth()}月${solar.getDay()}日 ${solar.getWeekInChinese()}`;
+                const lunarStr = `農曆 ${lunar.getMonthInChinese()}月${lunar.getDayInChinese()}`;
+                const stemBranch = `${lunar.getDayInGanZhi()}日`;
+                document.getElementById('gregorianDate').innerText = solarStr;
+                document.getElementById('lunarAndStems').innerText = `${lunarStr} (${stemBranch})`;
+            } catch (e) {
+                console.error("日期計算出錯", e);
+            }
+        }
+
+        function parseICS(text) {
+            const data = {};
+            const events = text.split("BEGIN:VEVENT");
+            events.forEach(evt => {
+                const summaryMatch = evt.match(/SUMMARY:(.+)/);
+                const dateMatch = evt.match(/DTSTART;VALUE=DATE:(\d{4})(\d{2})(\d{2})/);
+                if (summaryMatch && dateMatch) {
+                    const name = summaryMatch[1].trim();
+                    const year = parseInt(dateMatch[1]);
+                    const month = parseInt(dateMatch[2]);
+                    const day = parseInt(dateMatch[3]);
+                    if (!data[year]) data[year] = {};
+                    data[year][name] = { month, day };
+                }
+            });
+            return data;
+        }
+
+        function getTermDate(year, termName) {
+            if (cloudDataStore[year] && cloudDataStore[year][termName]) {
+                const d = cloudDataStore[year][termName];
+                return { month: d.month, day: d.day };
+            }
+            const startLunar = Solar.fromYmd(year, 1, 1).getLunar();
+            const table1 = startLunar.getJieQiTable(); 
+            const nextLunar = Solar.fromYmd(year, 12, 31).getLunar();
+            const table2 = nextLunar.getJieQiTable(); 
+            let target = (table1[termName] && table1[termName].getYear() === year) ? table1[termName] : 
+                         ((table2[termName] && table2[termName].getYear() === year) ? table2[termName] : null);
+            if (!target) {
+                const mid = Solar.fromYmd(year, 6, 1).getLunar().getJieQiTable();
+                target = mid[termName];
+            }
+            return { month: target ? target.getMonth() : 1, day: target ? target.getDay() : 1 };
+        }
+
+        async function fetchCloudDataAndInit() {
+            document.getElementById('loadingIndicator').classList.remove('hidden');
+            try {
+                const res = await fetch(ICS_URL);
+                if (res.ok) {
+                    const text = await res.text();
+                    cloudDataStore = parseICS(text);
+                }
+            } catch (err) {
+                console.warn("雲端同步受限");
+            } finally {
+                document.getElementById('loadingIndicator').classList.add('hidden');
+                initAndRender();
+            }
+        }
+
+        function initTermsData(year) {
+            computedSolarTerms = termOrder.map(name => {
+                const dateInfo = getTermDate(year, name);
+                const info = solarTermsInfo[name];
+                return {
+                    name, month: dateInfo.month, computedDay: dateInfo.day,
+                    season: info.season, icon: info.icon, desc: info.desc, detail: info.detail,
+                    formattedDate: `${dateInfo.month}月${dateInfo.day}日`
+                };
+            });
+        }
+
+        function getCurrentTermName() {
+            const now = new Date();
+            const month = now.getMonth() + 1, day = now.getDate();
+            const val = (month === 1) ? (1300 + day) : (month * 100 + day);
+            let active = computedSolarTerms[0];
+            for (const t of computedSolarTerms) {
+                const tVal = (t.month === 1) ? (1300 + t.computedDay) : (t.month * 100 + t.computedDay);
+                if (val >= tVal) active = t;
+            }
+            return active.name;
+        }
+
+        function handleYearChange() {
+            const input = document.getElementById('yearInput');
+            let val = parseInt(input.value);
+            if (isNaN(val)) return;
+            val = Math.max(1901, Math.min(2100, val));
+            input.value = val;
+            currentYear = val;
+            initAndRender();
+        }
+
+        function getSeasonName(s) {
+            const names = { spring: '春', summer: '夏', autumn: '秋', winter: '冬' };
+            return names[s] || '';
+        }
+
+        // 修改後的卡片渲染：移除文字、加入當季標籤
+        function renderTerms(data, activeTermName = null) {
+            const grid = document.getElementById('termsGrid');
+            grid.innerHTML = '';
+            
+            const activeName = activeTermName || getCurrentTermName();
+
+            data.forEach((term) => {
+                const isToday = term.name === activeName;
+                const card = document.createElement('div');
+                
+                card.className = `term-card bg-white p-6 rounded-2xl shadow-md cursor-pointer season-${term.season} ${isToday ? 'current-term-border scale-105 shadow-xl' : ''}`;
+                card.onclick = () => openModal(term);
+                
+                card.innerHTML = `
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="text-4xl">${term.icon}</div>
+                        ${isToday ? '<span class="bg-stone-800 text-white text-[10px] px-2 py-0.5 rounded-full font-bold tracking-widest animate-pulse shadow-sm">當季</span>' : ''}
+                    </div>
+                    <h3 class="text-2xl font-bold serif-font mb-2 text-stone-800 leading-tight">${term.name}</h3>
+                    <p class="text-stone-500 text-sm mb-3 font-mono leading-none">${currentYear} · ${term.formattedDate}</p>
+                    <p class="text-stone-600 line-clamp-2 text-sm leading-relaxed">${term.desc}</p>
+                    <div class="mt-4 text-stone-400 text-xs font-bold uppercase tracking-wider">
+                        ${getSeasonName(term.season)} 季
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function filterSeason(season) {
+            if (season === 'all') initAndRender();
+            else renderTerms(computedSolarTerms.filter(t => t.season === season));
+        }
+
+        function searchTerms() {
+            const q = document.getElementById('searchInput').value.toLowerCase();
+            renderTerms(computedSolarTerms.filter(t => t.name.includes(q) || t.desc.includes(q)));
+        }
+
+        function openModal(term) {
+            const modal = document.getElementById('modal');
+            const content = document.getElementById('modalContent');
+            content.innerHTML = `
+                <div class="flex flex-col items-center mb-8 text-center">
+                    <span class="text-6xl mb-4">${term.icon}</span>
+                    <h2 class="text-3xl font-bold serif-font text-stone-800 tracking-widest font-bold">${term.name}</h2>
+                    <p class="text-stone-400 mt-2 font-mono text-sm font-bold">${currentYear}年 ${term.formattedDate}</p>
+                </div>
+                <div class="space-y-6 text-sm leading-loose text-stone-700 text-left">
+                    <div class="bg-stone-50 p-6 rounded-3xl border border-stone-100">
+                        <h4 class="font-bold text-stone-900 border-b border-stone-200 pb-2 mb-3 serif-font text-base tracking-widest text-center">節氣意涵</h4>
+                        <p class="font-light text-center">${term.desc}</p>
+                    </div>
+                    <div class="px-2 text-center">
+                        <h4 class="font-bold text-stone-900 border-b border-stone-200 pb-2 mb-3 serif-font text-base tracking-widest">深入探索</h4>
+                        <p class="text-stone-600 font-light">${term.detail}</p>
+                    </div>
+                </div>
+            `;
+            modal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden'; 
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.add('hidden');
+            document.body.style.overflow = 'auto';
+        }
+
+        function openCalendar() {
+            const modal = document.getElementById('calendarModal');
+            const yearSelect = document.getElementById('calYearSelect');
+            const monthSelect = document.getElementById('calMonthSelect');
+            
+            if (yearSelect.options.length === 0) {
+                for (let i = 1901; i <= 2100; i++) {
+                    const opt = document.createElement('option'); opt.value = i; opt.text = i;
+                    yearSelect.appendChild(opt);
+                }
+                for (let i = 1; i <= 12; i++) {
+                    const opt = document.createElement('option'); opt.value = i; opt.text = i;
+                    monthSelect.appendChild(opt);
+                }
+            }
+            
+            const now = new Date();
+            yearSelect.value = now.getFullYear();
+            monthSelect.value = now.getMonth() + 1;
+            
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+            renderCalendarContent();
+
+            const calContentArea = document.getElementById('calendarContent');
+            calContentArea.onwheel = (e) => {
+                e.preventDefault();
+                changeCalendarMonth(e.deltaY > 0 ? 1 : -1);
+            };
+            calContentArea.addEventListener('touchstart', (e) => {
+                touchStartY = e.changedTouches[0].screenY;
+            }, { passive: true });
+            calContentArea.addEventListener('touchend', (e) => {
+                let touchEndY = e.changedTouches[0].screenY;
+                const threshold = 40; 
+                if (touchEndY < touchStartY - threshold) changeCalendarMonth(1); 
+                if (touchEndY > touchStartY + threshold) changeCalendarMonth(-1); 
+            }, { passive: true });
+        }
+
+        function changeCalendarMonth(offset) {
+            if (calendarScrollThrottle) return;
+            const yearSelect = document.getElementById('calYearSelect');
+            const monthSelect = document.getElementById('calMonthSelect');
+            let year = parseInt(yearSelect.value);
+            let month = parseInt(monthSelect.value);
+            month += offset;
+            if (month > 12) { month = 1; year++; }
+            else if (month < 1) { month = 12; year--; }
+            if (year >= 1901 && year <= 2100) {
+                yearSelect.value = year; monthSelect.value = month;
+                renderCalendarContent();
+                calendarScrollThrottle = true;
+                setTimeout(() => { calendarScrollThrottle = false; }, 250);
+            }
+        }
+
+        function closeCalendar() {
+            document.getElementById('calendarModal').classList.remove('active');
+            document.body.style.overflow = 'auto';
+        }
+
+        // 萬年曆繁體化映射
+        const traditionalJieQiMap = {
+            '惊蛰': '驚蟄',
+            '谷雨': '穀雨',
+            '芒种': '芒種',
+            '处暑': '處暑'
+        };
+
+        function renderCalendarContent() {
+            const year = parseInt(document.getElementById('calYearSelect').value);
+            const month = parseInt(document.getElementById('calMonthSelect').value);
+            const container = document.getElementById('calendarContent');
+            const firstDay = new Date(year, month - 1, 1).getDay();
+            const daysInMonth = new Date(year, month, 0).getDate();
+            const today = new Date();
+            const isCurrentMonth = today.getFullYear() === year && (today.getMonth() + 1) === month;
+            
+            let html = `
+                <div class="calendar-grid-header text-xs md:text-2xl mb-1 md:mb-2 uppercase tracking-wider shrink-0">
+                    <div class="py-1 text-red-400/90">日</div><div class="py-1">一</div><div class="py-1">二</div>
+                    <div class="py-1">三</div><div class="py-1">四</div><div class="py-1">五</div>
+                    <div class="py-1 text-stone-400">六</div>
+                </div>
+                <div class="calendar-grid-body rounded-2xl md:rounded-[4rem] overflow-hidden bg-white">
+            `;
+            
+            for (let i = 0; i < firstDay; i++) html += `<div class="calendar-day bg-stone-50/20"></div>`;
+            for (let d = 1; d <= daysInMonth; d++) {
+                const sol = Solar.fromYmd(year, month, d);
+                const lun = sol.getLunar();
+                const isToday = isCurrentMonth && today.getDate() === d;
+                const lunarRow = `${lun.getMonthInChinese()}月${lun.getDayInChinese()}(${lun.getDayInGanZhi()})`;
+                
+                // 確保節氣顯示為繁體
+                const jieQi = lun.getJieQi();
+                const displayJieQi = traditionalJieQiMap[jieQi] || jieQi;
+                
+                html += `
+                    <div class="calendar-day group hover:bg-stone-50 transition-all overflow-hidden border-b border-r border-stone-100 text-center">
+                        <span class="${isToday ? 'is-today-circle' : 'text-stone-800 font-bold'} text-sm md:text-2xl leading-none">${d}</span>
+                        <div class="flex flex-col items-center mt-0.5 md:mt-1 text-center">
+                            <span class="text-[7px] md:text-sm text-stone-400 font-medium leading-tight text-center px-1">${lunarRow}</span>
+                        </div>
+                        ${displayJieQi ? `<span class="jie-qi-tag">${displayJieQi}</span>` : ''}
+                    </div>
+                `;
+            }
+            const totalCells = firstDay + daysInMonth;
+            const remaining = (42 - totalCells); 
+            for (let i = 0; i < remaining; i++) html += `<div class="calendar-day bg-stone-50/20"></div>`;
+            
+            html += `</div>`;
+            container.innerHTML = html;
+        }
+
+        function initAndRender() {
+            initTermsData(currentYear);
+            const active = getCurrentTermName();
+            const idx = computedSolarTerms.findIndex(t => t.name === active);
+            const sorted = [...computedSolarTerms.slice(idx), ...computedSolarTerms.slice(0, idx)];
+            renderTerms(sorted, active);
+        }
+
+        window.onload = () => {
+            document.getElementById('yearInput').value = currentYear;
+            updateTodayInfo();
+            fetchCloudDataAndInit();
+        };
+
+        window.onclick = (e) => { 
+            if (e.target.id === 'modal') closeModal(); 
+            if (e.target.id === 'calendarModal') closeCalendar();
+        }
+    </script>
+</body>
+</html>

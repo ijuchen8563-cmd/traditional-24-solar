@@ -15,7 +15,7 @@
     <link rel="manifest" href="manifest.json">
     
     <script src="https://cdn.tailwindcss.com"></script>
-        <script src="https://cdn.jsdelivr.net/npm/lunar-javascript/lunar.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lunar-javascript/lunar.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
         
@@ -175,7 +175,7 @@
 </head>
 <body class="bg-stone-50 text-stone-800">
 
-        <header class="hero-section relative py-10 md:py-16 text-stone-900 border-b border-stone-100 text-center">
+    <header class="hero-section relative py-10 md:py-16 text-stone-900 border-b border-stone-100 text-center">
         <div class="container mx-auto px-6 relative z-10 text-center">
             <h1 class="text-4xl sm:text-5xl md:text-7xl font-bold serif-font mb-6 tracking-[0.4em] text-stone-800 opacity-90 text-center whitespace-nowrap">二十四節氣</h1>
             <div class="bg-white/50 backdrop-blur-lg inline-block px-10 py-4 rounded-2xl border border-stone-200/50 shadow-sm text-center">
@@ -187,7 +187,7 @@
         </div>
     </header>
 
-        <section class="container mx-auto px-6 -mt-8 relative z-20">
+    <section class="container mx-auto px-6 -mt-8 relative z-20">
         <div class="bg-white/95 backdrop-blur-md rounded-2xl shadow-xl p-4 border border-white">
             <div class="grid grid-cols-1 gap-4 md:flex md:flex-row md:justify-between md:items-center">
                 <div class="flex items-center gap-3 w-full md:w-auto">
@@ -221,14 +221,14 @@
         </div>
     </section>
 
-        <main class="container mx-auto px-6 py-16">
+    <main class="container mx-auto px-6 py-16">
         <div id="loadingIndicator" class="flex justify-center mb-10 hidden">
             <div class="loader"></div>
         </div>
         <div id="termsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-10"></div>
     </main>
 
-        <div id="modal" class="fixed inset-0 bg-stone-900/30 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+    <div id="modal" class="fixed inset-0 bg-stone-900/30 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-[2.5rem] max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-stone-50 text-center">
             <div id="modalContent" class="p-8 md:p-12 text-center"></div>
             <div class="border-t border-stone-50 p-8 flex justify-end">
@@ -237,9 +237,9 @@
         </div>
     </div>
 
-        <div id="calendarModal">
+    <div id="calendarModal">
         <div class="calendar-container">
-                        <div class="px-5 py-3 md:px-12 md:py-6 border-b border-stone-100 flex flex-row justify-between items-center bg-white shrink-0">
+            <div class="px-5 py-3 md:px-12 md:py-6 border-b border-stone-100 flex flex-row justify-between items-center bg-white shrink-0">
                 <div class="flex items-center gap-2 md:gap-8">
                     <h2 class="hidden sm:block text-xl md:text-4xl font-bold serif-font text-stone-800 mr-2 tracking-wider">萬年曆查詢</h2>
                     <select id="calYearSelect" onchange="renderCalendarContent()" class="bg-stone-50 px-2 py-1 rounded-xl border border-stone-200 font-bold focus:outline-none text-base md:text-3xl shadow-sm"></select>
@@ -255,14 +255,14 @@
                 </div>
             </div>
             
-                        <div id="calendarScrollWrapper">
+            <div id="calendarScrollWrapper">
                 <div id="calendarContent" class="text-center">
-                                    </div>
+                </div>
             </div>
         </div>
     </div>
 
-        <footer class="bg-stone-100 py-12 text-center text-stone-400 border-t border-stone-200">
+    <footer class="bg-stone-100 py-12 text-center text-stone-400 border-t border-stone-200">
         <div class="container mx-auto px-6 text-center">
             <div class="serif-font text-xl mb-6 text-stone-700 tracking-widest font-bold text-center">「天行健，君子以自強不息。」</div>
             
@@ -381,21 +381,31 @@
         }
 
         function getTermDate(year, termName) {
+            // 1. 先從雲端 ICS 資料中查找
             if (cloudDataStore[year] && cloudDataStore[year][termName]) {
                 const d = cloudDataStore[year][termName];
                 return { month: d.month, day: d.day };
             }
-            const startLunar = Solar.fromYmd(year, 1, 1).getLunar();
-            const table1 = startLunar.getJieQiTable(); 
-            const nextLunar = Solar.fromYmd(year, 12, 31).getLunar();
-            const table2 = nextLunar.getJieQiTable(); 
-            let target = (table1[termName] && table1[termName].getYear() === year) ? table1[termName] : 
-                         ((table2[termName] && table2[termName].getYear() === year) ? table2[termName] : null);
-            if (!target) {
-                const mid = Solar.fromYmd(year, 6, 1).getLunar().getJieQiTable();
-                target = mid[termName];
+            // 2. 修正：使用 getJieQiTable 並處理繁簡名稱對照，確保能正確抓到陽曆年份的節氣
+            try {
+                // 部分節氣繁簡名稱在 JS 庫中鍵值不同
+                const t2s = { '驚蟄': '惊蛰', '穀雨': '谷雨', '小滿': '小满', '芒種': '芒种', '處暑': '处暑' };
+                const searchName = t2s[termName] || termName;
+                
+                // 檢查年初、年中、年尾的農曆節氣表，以涵蓋整年陽曆節氣
+                const checkMonths = [1, 6, 12];
+                for (let m of checkMonths) {
+                    const table = Solar.fromYmd(year, m, 1).getLunar().getJieQiTable();
+                    const targetSolar = table[searchName];
+                    if (targetSolar && targetSolar.getYear() === year) {
+                        return { month: targetSolar.getMonth(), day: targetSolar.getDay() };
+                    }
+                }
+            } catch (e) {
+                console.error("節氣計算失敗:", termName, e);
             }
-            return { month: target ? target.getMonth() : 1, day: target ? target.getDay() : 1 };
+            // 3. 失敗時的最後保底
+            return { month: 1, day: 1 };
         }
 
         async function fetchCloudDataAndInit() {
@@ -682,9 +692,9 @@
                     <div class="calendar-day group hover:bg-stone-50 transition-all overflow-hidden border-b border-r border-stone-100 text-center">
                                                 <span class="${isToday ? 'is-today-circle' : 'text-stone-900 font-black'} text-lg md:text-sm leading-none">${d}</span>
                         <div class="flex flex-col items-center mt-0.5 md:mt-0 text-center leading-tight">
-                                                        <span class="text-[11px] md:text-[9px] text-stone-900 font-bold px-1 whitespace-nowrap">${lunarRow}</span>
+                                                            <span class="text-[11px] md:text-[9px] text-stone-900 font-bold px-1 whitespace-nowrap">${lunarRow}</span>
                             
-                                                        <div class="flex flex-col md:flex-row md:flex-nowrap items-center justify-center md:gap-0.5 mt-0.5 md:mt-0 leading-none">
+                                                            <div class="flex flex-col md:flex-row md:flex-nowrap items-center justify-center md:gap-0.5 mt-0.5 md:mt-0 leading-none">
                                                                 <span class="text-[10px] md:text-[8px] text-stone-700 font-bold whitespace-nowrap">${gzMonth}</span>
                                 <span class="text-[10px] md:text-[8px] text-stone-700 font-bold whitespace-nowrap">${gzDay}</span>
                             </div>
